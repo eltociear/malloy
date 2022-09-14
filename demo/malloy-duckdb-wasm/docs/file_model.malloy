@@ -1,0 +1,5 @@
+// The file you select will be available to DuckDB at as
+// "local.parquet" or "local.csv"
+//
+
+source: local_source is table('duckdb:local.parquet') {}

@@ -11,7 +11,7 @@
  * GNU General Public License for more details.
  */
 
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import styled, { createGlobalStyle } from "styled-components";
 import { Field, Model, Result, Runtime } from "@malloydata/malloy";
 import { HTMLView } from "@malloydata/render";
@@ -68,6 +68,10 @@ export const App: React.FC = () => {
   const [autoRun, setAutoRun] = useState(false);
 
   const [search, setSearch] = useState(window.location.search);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const isLocalFile = sample?.dataTables.length === 0;
 
   const updateSearchParam = (name: string, value: string) => {
     const url = new URL(window.location.href);
@@ -140,9 +144,11 @@ export const App: React.FC = () => {
           );
         }
 
-        const model = await runtime.getModel(modelUrl);
-        setModel(model);
         updateSearchParam("m", sample.name);
+        if (!isLocalFile) {
+          const model = await runtime.getModel(modelUrl);
+          setModel(model);
+        }
         setSample(sample);
       }
       setStatus("Ready");
@@ -157,9 +163,9 @@ export const App: React.FC = () => {
       setLoadedQuery(queryText);
       setEditedQuery(queryText);
       updateSearchParam("q", query.name);
-      setAutoRun(true);
+      setAutoRun(!isLocalFile);
     }
-  }, [query]);
+  }, [isLocalFile, query, sample]);
 
   // Run turtle
   const onFieldClick = useCallback(
@@ -244,6 +250,39 @@ export const App: React.FC = () => {
     updateSearchParam("t", "");
   }, []);
 
+  const onSelectFile = useCallback<React.ChangeEventHandler>(async () => {
+    if (sample && inputRef.current?.files?.length) {
+      const modelUrl = new URL(sample.modelPath, window.location.href);
+      const file = inputRef.current?.files[0];
+      const parts = file.name.match(/\.(\w+)$/);
+      const ext = parts ? parts[1] : "parquet";
+      await lookup.connection.database?.registerFileHandle(
+        `local.${ext}`,
+        file
+      );
+      const newLoadedModel = loadedModel.replace(
+        /table\('duckdb:local\..*'\)/,
+        `table('duckdb:local.${ext}')`
+      );
+      setLoadedModel(newLoadedModel);
+      baseReader.setContents(modelUrl.toString(), newLoadedModel);
+      const model = await runtime.getModel(modelUrl);
+      setModel(model);
+    }
+  }, [loadedModel]);
+
+  const onModelChange = useCallback(
+    (value: string) => {
+      if (sample?.modelPath) {
+        baseReader.setContents(
+          new URL(sample.modelPath, window.location.href).toString(),
+          value
+        );
+      }
+    },
+    [sample]
+  );
+
   return (
     <React.StrictMode>
       <GlobalStyle />
@@ -262,18 +301,35 @@ export const App: React.FC = () => {
             selectedQuery={query}
             queries={queries}
           />
+          {isLocalFile ? (
+            <FileInput
+              accept=".csv,.parquet"
+              type="file"
+              onChange={onSelectFile}
+              ref={inputRef}
+            />
+          ) : null}
         </TitleSection>
         <Run onRun={onRun} />
       </Header>
       <View>
-        <SchemaView model={model} onFieldClick={onFieldClick} />
+        <SchemaView
+          isLocalFile={isLocalFile}
+          model={model}
+          onFieldClick={onFieldClick}
+        />
         <Left>
           <Query
             queryPath={sample?.queryPath}
             query={loadedQuery}
             onChange={setEditedQuery}
           />
-          <ModelView modelPath={sample?.modelPath} model={loadedModel} />
+          <ModelView
+            modelPath={sample?.modelPath}
+            model={loadedModel}
+            readOnly={!isLocalFile}
+            onChange={onModelChange}
+          />
         </Left>
         <Right>
           {rendered || error ? (
@@ -396,6 +452,7 @@ const Title = styled.label`
 const TitleSection = styled.div`
   display: flex;
   flex-direction: row;
+  align-items: center;
 `;
 
 const Divider = styled.div`
@@ -420,4 +477,8 @@ const GlobalStyle = createGlobalStyle`
   a {
     color: #188ff9;
   }
+`;
+
+const FileInput = styled.input`
+  margin-left: 20px;
 `;

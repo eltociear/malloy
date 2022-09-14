@@ -20,20 +20,30 @@ import { Title } from "./Title";
 export interface ModelViewProps {
   model: string;
   modelPath?: string;
+  onChange: (value: string) => void;
+  readOnly: boolean;
 }
 
-export const ModelView: React.FC<ModelViewProps> = ({ model }) => {
+export const ModelView: React.FC<ModelViewProps> = ({
+  model,
+  onChange,
+  readOnly,
+}) => {
   return (
-    <Wrapper>
+    <Wrapper readOnly={readOnly}>
       <Title>
         Semantic Model <Info title="Reusable calculations" />
       </Title>
-      <Editor value={model} readOnly={true} />
+      <Editor value={model} readOnly={readOnly} onChange={onChange} />
     </Wrapper>
   );
 };
 
-const Wrapper = styled.div`
+interface WrapperProps {
+  readOnly: boolean;
+}
+
+const Wrapper = styled.div<WrapperProps>`
   display: flex;
   flex: auto;
   flex-direction: column;
@@ -43,6 +53,6 @@ const Wrapper = styled.div`
 
   .monaco-editor-background,
   .monaco-editor .margin {
-    background-color: #f0f4fd;
+    background-color: ${({ readOnly }) => (readOnly ? "#f0f4fd" : "#ffffff")};
   }
 `;

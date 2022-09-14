@@ -18,11 +18,13 @@ import { Info } from "./Info";
 import { Title } from "./Title";
 
 export interface SchemaViewProps {
+  isLocalFile: boolean;
   model: Model | undefined;
   onFieldClick: (field: Field) => void;
 }
 
 export const SchemaView: React.FC<SchemaViewProps> = ({
+  isLocalFile,
   model,
   onFieldClick,
 }) => {
@@ -42,6 +44,8 @@ export const SchemaView: React.FC<SchemaViewProps> = ({
                 depth={0}
               />
             ))
+          ) : isLocalFile ? (
+            <Loading>Select a File</Loading>
           ) : (
             <Loading>Loading...</Loading>
           )}

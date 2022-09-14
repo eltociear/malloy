@@ -1,0 +1,10 @@
+import "file_modal.malloy"
+
+// --
+// Name: Preview
+// A simple query that will show a the first few rows
+// of your data file
+
+query: local_source -> {
+  project: *
+}

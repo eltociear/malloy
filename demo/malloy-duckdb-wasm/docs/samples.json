@@ -20,7 +20,18 @@
   {
     "name": "No Model",
     "modelPath": "./no_model.malloy",
-    "dataTables": ["auto_recalls.csv", "words.parquet", "ga_sample.parquet","airports.parquet"],
+    "dataTables": [
+      "auto_recalls.csv",
+      "words.parquet",
+      "ga_sample.parquet",
+      "airports.parquet"
+    ],
     "queryPath": "./no_model-queries.malloy"
+  },
+  {
+    "name": "Choose CSV/Parquet...",
+    "modelPath": "./file_model.malloy",
+    "dataTables": [],
+    "queryPath": "./file_model-queries.malloy"
   }
 ]
